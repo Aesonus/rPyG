@@ -37,17 +37,22 @@ class System:
 class Engine:
     system = System(randvar=5)
 
-    def inputList(self, choices, prompt, returnValues=None):
+    def inputList(self, choices, prompt, returnValues=None, goBack=False):
         "Prints a list of choices on the screen with formatting"
         choice = None
         while choice is None:
+            if goBack:
+                print("0 - Go Back")
             for i in range(len(choices)):
                 print(("{} - {}".format(i + 1, choices[i])))
             try:
                 action = int((input(prompt)))
-                if action < 1:
+                if action < 1 and goBack:
+                    choice = BackAMenu()
                     continue
-                if returnValues == None:
+                elif action < 1:
+                    continue
+                elif returnValues == None:
                     choice = choices[action - 1]
                 else:
                     choice = returnValues[action - 1]
@@ -56,10 +61,13 @@ class Engine:
             except IndexError:
                 continue
         return choice
+
     def notDeadMembers(self, members):
-        "Gets all not dead members"
+        "Gets all not dead members in list"
         return list(filter(lambda item: item.isDead() == False, members))
 
+class BackAMenu:
+    "Returned by Engine.inputList if the user wants to go back a menu level"
 
 class Party(Engine):
     @property
@@ -111,9 +119,8 @@ class Battle(Engine):
                 if (attacker.isDead()):
                     continue  # Go to the next character in the battle
                 self.printCurrent(self.members[i])
-                action = attacker.chooseAction()
-                targets = attacker.chooseTarget(self, action)
-                dmg = action.execute(attacker, targets)
+                choice = self.chooseAction(attacker)
+                dmg = choice[0].execute(attacker, choice[1])
                 print(dmg)
                 print()
                 sleep(1.5)
@@ -122,6 +129,15 @@ class Battle(Engine):
                     break
             turns_played += 1
         return turns_played
+
+    def chooseAction(self, attacker):
+        "Returns the action and targets in a tuple"
+        targets = None
+        while targets is None or isinstance(targets, BackAMenu):
+            action = attacker.chooseAction()
+            targets = attacker.chooseTarget(self, action)
+
+        return (action, targets)
 
     def allDead(self, instance):
         for member in self.members:

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .system import Engine
+from .system import Engine, BackAMenu
 from .action import Attack, Dark, Heal
 from random import choice, randrange
 import math
@@ -57,10 +57,10 @@ class Character(Engine):
         return self.stat["hp"] < 1
 
     def chooseAction(self):
-        return None
+        raise NotImplementedError
 
     def chooseTarget(self, battle, action):
-        return None
+        raise NotImplementedError
 
     def __str__(self):
         st = self.name
@@ -79,29 +79,36 @@ class Ally(Character):
 
     def chooseTarget(self, battle, action):
         target_type = self.chooseTargetType(action)
-
+        if (isinstance(target_type, BackAMenu)):
+            return target_type
         # Now pick the target based on the type
         target = None
         while target is None:
             if (target_type == 'single'):
                 target_list = list(map(lambda value: "{} {}/{} HP".format(
                     value, value.stat['hp'], value.initial_stat['hp']), battle.notDeadMembers()))
-                target = [self.inputList(
-                    target_list, "Please choose a target: ", returnValues=battle.notDeadMembers())]
+                target = self.inputList(
+                    target_list, "Please choose a target: ", returnValues=battle.notDeadMembers(), goBack=True)
+                if not isinstance(target, BackAMenu):
+                    target = [target]
             elif (target_type == 'party'):
                 target = self.inputList(
-                    battle.parties, "Please choose a target: ").members
+                    battle.parties, "Please choose a target: ", goBack=True)
+                if not isinstance(target, BackAMenu):
+                    target = target.members
             elif (target_type == 'all'):
                 target = battle.members
         return target
-    
+
     def chooseTargetType(self, action):
         target_types = action.target_types
+        target_type = None
         if (len(target_types) == 1):
             target_type = target_types[0]
         else:
-            target_type = self.inputList(
-                target_types, "Please choose a target type: ")
+            while target_type is None:
+                target_type = self.inputList(
+                    target_types, "Please choose a target type: ", goBack=True)
         return target_type
 
 
@@ -122,6 +129,7 @@ class Enemy(Character):
         target = choice(self.notDeadMembers(target_party.members))
         return [target]
 
+
 class Boss(Enemy):
     last_attack = None
 
@@ -138,7 +146,7 @@ class Boss(Enemy):
             # Attack
             return self.actions[0]
         else:
-            #dark
+            # dark
             return self.actions[1]
 
     def chooseTarget(self, battle, action):
@@ -149,4 +157,3 @@ class Boss(Enemy):
         else:
             # Healz
             return [self]
-
