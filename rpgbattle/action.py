@@ -12,6 +12,16 @@ class Action(Engine):
     def target_types(self, target_types):
         self.__target_types = target_types
 
+    @property
+    def favors(self):
+        return self.__favors
+
+    @favors.setter
+    def favors(self, favors):
+        if favors != "Allies" or favors != "Enemies":
+            raise Exception
+        self.__favors = favors
+
     def execute(self, source, targets):
         "Performs the action and applies all effects. Returns an array of strings that describe what has happened"
         return [0]

@@ -28,7 +28,7 @@ class System:
 
     def applyHealing(self, healing, stat, target):
         dmg = self.randVar(healing)
-        new_stat = max((target.getInitialStat(
+        new_stat = min((target.getInitialStat(
             stat), target.getStat(stat) + dmg))
         target.stat[stat] = new_stat
         return dmg
@@ -56,6 +56,9 @@ class Engine:
             except IndexError:
                 continue
         return choice
+    def notDeadMembers(self, members):
+        "Gets all not dead members"
+        return list(filter(lambda item: item.isDead() == False, members))
 
 
 class Party(Engine):
@@ -96,7 +99,7 @@ class Battle(Engine):
 
     def notDeadMembers(self):
         "Gets all not dead members"
-        return list(filter(lambda item: item.isDead() == False, self.members))
+        return super().notDeadMembers(self.members)
 
     def mainLoop(self):
         "Runs a battle till it ends"

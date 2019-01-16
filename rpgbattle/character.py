@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from .system import Engine
-from .action import Attack, Dark
-from random import uniform as rand
+from .action import Attack, Dark, Heal
+from random import choice, randrange
 import math
 
 
@@ -112,13 +112,41 @@ class Enemy(Character):
     def chooseAction(self):
         return self.actions[0]
 
-    def chooseTarget(self, battle, action):
+    def chooseTarget(self, battle, action, partyName="Allies"):
         # Select the allies
         for party in battle.parties:
-            if party.name == "Allies":
+            if party.name == partyName:
                 target_party = party
                 break
         # Select random party member
-        target = target_party.members[math.floor(
-            rand(0, len(target_party.members)))]
+        target = choice(self.notDeadMembers(target_party.members))
         return [target]
+
+class Boss(Enemy):
+    last_attack = None
+
+    def __init__(self, hp, patt, pdef, init):
+        super(Boss, self).__init__(hp, patt, pdef, init)
+        self.actions = [Attack(), Dark(), Heal()]
+
+    def chooseAction(self):
+        if (self.getStat('hp') < .15 * self.getInitialStat('hp')):
+            # Heal
+            return self.actions[2]
+        dice_roll = randrange(1, stop=6)
+        if (dice_roll >= 1 and dice_roll < 4):
+            # Attack
+            return self.actions[0]
+        else:
+            #dark
+            return self.actions[1]
+
+    def chooseTarget(self, battle, action):
+        if (isinstance(action, Attack)):
+            return super().chooseTarget(battle, action)
+        elif isinstance(action, Dark):
+            return self.notDeadMembers(battle.parties[0].members)
+        else:
+            # Healz
+            return [self]
+
